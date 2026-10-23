@@ -422,3 +422,25 @@ describe("reminders and privacy", () => {
     expect(after).toHaveLength(1);
   });
 });
+
+describe("storage object access follows the files table", () => {
+  it("a member reads the object of a project file they can access, not a private one", async () => {
+    const shared = (await asUser(db, admin, (tx) =>
+      one(rows<{ id: string }>(tx, "insert into public.projects (company_id, name, owner_id, created_by) values ($1, 'Con archivos', $2, $2) returning id", [companyA, admin])),
+    )).id;
+    const hidden = (await asUser(db, admin, (tx) =>
+      one(rows<{ id: string }>(tx, "insert into public.projects (company_id, name, owner_id, created_by) values ($1, 'Archivos ocultos', $2, $2) returning id", [companyA, admin])),
+    )).id;
+    await asUser(db, admin, async (tx) => {
+      await tx.query("insert into public.project_members (project_id, user_id) values ($1, $2)", [shared, member]);
+      for (const [pid, file] of [[shared, "ok.pdf"], [hidden, "secreto.pdf"]]) {
+        const path = `${companyA}/${file}`;
+        await tx.query("insert into storage.objects (bucket_id, name, owner_id) values ('company-files', $1, $2)", [path, admin]);
+        await tx.query("insert into public.files (company_id, project_id, name, storage_path, uploaded_by) values ($1, $2, $3, $4, $5)", [companyA, pid, file, path, admin]);
+      }
+    });
+    const visible = await asUser(db, member, (tx) => rows<{ name: string }>(tx, "select name from storage.objects where bucket_id = 'company-files'"));
+    expect(visible.map((o) => o.name)).toContain(`${companyA}/ok.pdf`);
+    expect(visible.map((o) => o.name)).not.toContain(`${companyA}/secreto.pdf`);
+  });
+});
