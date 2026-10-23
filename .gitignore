@@ -43,5 +43,3 @@ next-env.d.ts
 # allow the documented example
 !.env.example
 
-.vercel
-.env*
