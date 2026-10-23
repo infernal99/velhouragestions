@@ -1,10 +1,12 @@
 import * as React from "react"
-import { Input as InputPrimitive } from "@base-ui/react/input"
 import { cn } from "@/lib/utils"
 
+// Native <input> on purpose: Base UI's Input keeps its own internal value and
+// ignores values written through the ref, so React Hook Form's register()
+// defaults never showed up (edit forms rendered empty).
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
-    <InputPrimitive
+    <input
       type={type}
       data-slot="input"
       className={cn(

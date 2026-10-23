@@ -69,7 +69,7 @@ export function KanbanBoard<T extends { id: string }>({
   };
 
   return (
-    <DndContext sensors={sensors} onDragStart={(e) => setActiveId(String(e.active.id))} onDragEnd={handleEnd} onDragCancel={() => setActiveId(null)}>
+    <DndContext id="kanban" sensors={sensors} onDragStart={(e) => setActiveId(String(e.active.id))} onDragEnd={handleEnd} onDragCancel={() => setActiveId(null)}>
       <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-4 sm:mx-0 sm:px-0">
         {columns.map((col) => {
           const colItems = items.filter((i) => columnOf(i) === col.id);
