@@ -24,7 +24,6 @@ export function PreferencesForm({ preferences }: { preferences: CompanyPreferenc
   const [notifications, setNotifications] = useState<Record<NotificationKind, boolean>>(
     Object.fromEntries(KINDS.map((k) => [k.value, preferences.notifications?.[k.value] ?? true])) as Record<NotificationKind, boolean>,
   );
-  const [seeAllClients, setSeeAllClients] = useState(preferences.privacy?.members_see_all_clients ?? false);
   const [saving, setSaving] = useState(false);
 
   return (
@@ -46,24 +45,12 @@ export function PreferencesForm({ preferences }: { preferences: CompanyPreferenc
           de datos (pg_cron).
         </p>
       </Panel>
-      <Panel title="Privacidad">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium">Los miembros ven todos los clientes</p>
-            <p className="text-xs text-muted-foreground">
-              Desactivado: cada miembro solo ve los clientes de los que es responsable, que ha creado o con los que trabaja en un proyecto.
-              Las finanzas siguen restringidas igualmente.
-            </p>
-          </div>
-          <Switch checked={seeAllClients} onCheckedChange={(v) => setSeeAllClients(Boolean(v))} />
-        </div>
-      </Panel>
       <div className="flex justify-end">
         <Button
           disabled={saving}
           onClick={async () => {
             setSaving(true);
-            const res = await runAction(savePreferences({ notifications, privacy: { members_see_all_clients: seeAllClients } }));
+            const res = await runAction(savePreferences({ notifications }));
             setSaving(false);
             if (res.ok) router.refresh();
           }}

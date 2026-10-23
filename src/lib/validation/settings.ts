@@ -37,9 +37,6 @@ export const notificationKinds = ["task_assigned", "assignee_changed", "comment"
 
 export const preferencesSchema = z.object({
   notifications: z.record(z.enum(notificationKinds), z.boolean()),
-  privacy: z.object({
-    members_see_all_clients: z.boolean(),
-  }),
 });
 
 export const inviteSchema = z.object({

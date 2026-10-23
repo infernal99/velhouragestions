@@ -133,9 +133,9 @@ describe("projects and tasks", () => {
     );
   });
 
-  it("members only see projects they belong to", async () => {
-    const seen = await asUser(db, member, (tx) => rows<{ name: string }>(tx, "select name from public.projects"));
-    expect(seen.map((p) => p.name)).toEqual(["Compartido"]);
+  it("the whole team sees every project, even ones they are not a member of", async () => {
+    const seen = await asUser(db, member, (tx) => rows<{ name: string }>(tx, "select name from public.projects order by name"));
+    expect(seen.map((p) => p.name)).toEqual(["Compartido", "Privado"]);
   });
 
   it("cannot attach a project to another company's client", async () => {
@@ -170,15 +170,32 @@ describe("projects and tasks", () => {
     expect(p.progress).toBe(50);
   });
 
-  it("a member cannot create tasks in a project they can't access", async () => {
-    await expect(
-      asUser(db, member, (tx) =>
-        tx.query(
-          "insert into public.tasks (company_id, project_id, title, created_by) values ($1, $2, 'X', $3)",
-          [companyA, privateProject, member],
-        ),
+  it("any member can create, see and update tasks in any project (shared control)", async () => {
+    await asUser(db, member, (tx) =>
+      tx.query(
+        "insert into public.tasks (company_id, project_id, title, created_by) values ($1, $2, 'Tarea compartida', $3)",
+        [companyA, privateProject, member],
       ),
-    ).rejects.toThrow(/row-level security|no pertenece/);
+    );
+    const seenByAdmin = await asUser(db, admin, (tx) => rows(tx, "select 1 from public.tasks where title = 'Tarea compartida'"));
+    expect(seenByAdmin).toHaveLength(1);
+    await asUser(db, admin, (tx) => tx.query("update public.tasks set status = 'en_progreso' where title = 'Tarea compartida'"));
+    const after = await asUser(db, member, (tx) => rows<{ status: string }>(tx, "select status from public.tasks where title = 'Tarea compartida'"));
+    expect(after[0].status).toBe("en_progreso");
+  });
+
+  it("calendar events are visible and editable by the whole team", async () => {
+    await asUser(db, admin, (tx) =>
+      tx.query(
+        "insert into public.events (company_id, title, starts_at, ends_at, project_id, created_by) values ($1, 'Reunión interna', now(), now() + interval '1 hour', $2, $3)",
+        [companyA, privateProject, admin],
+      ),
+    );
+    const seen = await asUser(db, member, (tx) => rows(tx, "select 1 from public.events where title = 'Reunión interna'"));
+    expect(seen).toHaveLength(1);
+    await asUser(db, member, (tx) => tx.query("update public.events set title = 'Reunión movida' where title = 'Reunión interna'"));
+    const moved = await asUser(db, admin, (tx) => rows(tx, "select 1 from public.events where title = 'Reunión movida'"));
+    expect(moved).toHaveLength(1);
   });
 
   it("assigning a task notifies the assignee, not the actor", async () => {
@@ -198,11 +215,15 @@ describe("projects and tasks", () => {
     expect(adminSees).toHaveLength(0);
   });
 
-  it("global search only returns accessible rows", async () => {
+  it("global search finds team data for every member but never finance data of other companies", async () => {
     const results = await asUser(db, member, (tx) =>
       rows<{ title: string }>(tx, "select title from public.global_search($1, 'privado')", [companyA]),
     );
-    expect(results).toHaveLength(0);
+    expect(results.map((r) => r.title)).toContain("Privado");
+    const otherCompany = await asUser(db, outsider, (tx) =>
+      rows(tx, "select title from public.global_search($1, 'privado')", [companyA]),
+    );
+    expect(otherCompany).toHaveLength(0);
     const adminResults = await asUser(db, admin, (tx) =>
       rows<{ title: string }>(tx, "select title from public.global_search($1, 'privado')", [companyA]),
     );
@@ -409,22 +430,20 @@ describe("reminders and privacy", () => {
     await expect(asUser(db, member, (tx) => tx.query("select public.generate_due_reminders()"))).rejects.toThrow(/permission denied/);
   });
 
-  it("the 'members see all clients' option widens client visibility", async () => {
+  it("clients created by one member are visible and editable by the others", async () => {
     await asUser(db, admin, (tx) =>
       tx.query("insert into public.clients (company_id, name, created_by, owner_id) values ($1, 'Cliente del admin', $2, $2)", [companyA, admin]),
     );
-    const before = await asUser(db, member, (tx) => rows(tx, "select name from public.clients where name = 'Cliente del admin'"));
-    expect(before).toHaveLength(0);
-    await asUser(db, admin, (tx) =>
-      tx.query(`update public.companies set preferences = '{"privacy": {"members_see_all_clients": true}}' where id = $1`, [companyA]),
-    );
-    const after = await asUser(db, member, (tx) => rows(tx, "select name from public.clients where name = 'Cliente del admin'"));
-    expect(after).toHaveLength(1);
+    const seen = await asUser(db, member, (tx) => rows(tx, "select name from public.clients where name = 'Cliente del admin'"));
+    expect(seen).toHaveLength(1);
+    await asUser(db, member, (tx) => tx.query("update public.clients set stage = 'contactado' where name = 'Cliente del admin'"));
+    const after = await asUser(db, admin, (tx) => rows<{ stage: string }>(tx, "select stage from public.clients where name = 'Cliente del admin'"));
+    expect(after[0].stage).toBe("contactado");
   });
 });
 
 describe("storage object access follows the files table", () => {
-  it("a member reads the object of a project file they can access, not a private one", async () => {
+  it("a member reads the storage object of any project file, but not finance receipts", async () => {
     const shared = (await asUser(db, admin, (tx) =>
       one(rows<{ id: string }>(tx, "insert into public.projects (company_id, name, owner_id, created_by) values ($1, 'Con archivos', $2, $2) returning id", [companyA, admin])),
     )).id;
@@ -433,15 +452,16 @@ describe("storage object access follows the files table", () => {
     )).id;
     await asUser(db, admin, async (tx) => {
       await tx.query("insert into public.project_members (project_id, user_id) values ($1, $2)", [shared, member]);
-      for (const [pid, file] of [[shared, "ok.pdf"], [hidden, "secreto.pdf"]]) {
+      for (const [pid, file, isFinance] of [[shared, "ok.pdf", false], [hidden, "otro-proyecto.pdf", false], [hidden, "justificante.pdf", true]] as const) {
         const path = `${companyA}/${file}`;
         await tx.query("insert into storage.objects (bucket_id, name, owner_id) values ('company-files', $1, $2)", [path, admin]);
-        await tx.query("insert into public.files (company_id, project_id, name, storage_path, uploaded_by) values ($1, $2, $3, $4, $5)", [companyA, pid, file, path, admin]);
+        await tx.query("insert into public.files (company_id, project_id, name, storage_path, uploaded_by, is_finance) values ($1, $2, $3, $4, $5, $6)", [companyA, pid, file, path, admin, isFinance]);
       }
     });
     const visible = await asUser(db, member, (tx) => rows<{ name: string }>(tx, "select name from storage.objects where bucket_id = 'company-files'"));
     expect(visible.map((o) => o.name)).toContain(`${companyA}/ok.pdf`);
-    expect(visible.map((o) => o.name)).not.toContain(`${companyA}/secreto.pdf`);
+    expect(visible.map((o) => o.name)).toContain(`${companyA}/otro-proyecto.pdf`);
+    expect(visible.map((o) => o.name)).not.toContain(`${companyA}/justificante.pdf`);
   });
 });
 

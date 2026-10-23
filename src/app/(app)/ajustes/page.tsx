@@ -17,7 +17,7 @@ const TABS = [
   { value: "empresa", label: "Empresa" },
   { value: "proyectos", label: "Proyectos y webs" },
   { value: "gastos", label: "Categorías de gastos" },
-  { value: "notificaciones", label: "Notificaciones y privacidad" },
+  { value: "notificaciones", label: "Notificaciones" },
   { value: "equipo", label: "Miembros y permisos" },
 ];
 

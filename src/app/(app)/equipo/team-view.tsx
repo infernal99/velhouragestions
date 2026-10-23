@@ -121,7 +121,7 @@ export function TeamView({ members, invitations }: { members: MemberRow[]; invit
                       <Switch checked={m.can_view_finances} onCheckedChange={(v) => void update(m, { can_view_finances: Boolean(v) })} />
                     </label>
                     <label className="flex items-center justify-between gap-3">
-                      <span className="text-muted-foreground">Gestionar todos los clientes</span>
+                      <span className="text-muted-foreground">Poder eliminar clientes</span>
                       <Switch checked={m.can_manage_clients} onCheckedChange={(v) => void update(m, { can_manage_clients: Boolean(v) })} />
                     </label>
                   </div>
@@ -212,8 +212,8 @@ export function TeamView({ members, invitations }: { members: MemberRow[]; invit
         <div className="rounded-xl border bg-card p-4">
           <p className="mb-1 font-medium">Miembro</p>
           <p className="text-muted-foreground">
-            Accede a los proyectos y tareas que le corresponden, crea y actualiza tareas y comentarios. Las finanzas y la gestión de todos
-            los clientes solo si un administrador se lo concede.
+            Ve y edita todo el trabajo compartido: proyectos, clientes, tareas, calendario y documentos. Las finanzas solo si un
+            administrador se lo concede, y no accede a los ajustes de la empresa.
           </p>
         </div>
       </div>

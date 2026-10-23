@@ -91,12 +91,10 @@ Reglas importantes que impone la base de datos:
 | | Administrador | Miembro |
 | --- | --- | --- |
 | Ajustes de la empresa, miembros e invitaciones | ✅ | ❌ |
-| Proyectos | Todos | Los que crea, de los que es responsable o colaborador |
-| Tareas | Todas | Las de sus proyectos, las asignadas y las internas (sin proyecto) |
-| Clientes | Todos | Los suyos o de sus proyectos (o todos si se activa en Ajustes → Privacidad, o con el permiso «gestionar clientes») |
+| Proyectos, clientes, tareas, calendario, comentarios y actividad | Todo | Todo: espacio compartido, todos ven y editan lo mismo |
 | Finanzas (presupuestos, cobros, gastos, estadísticas) | ✅ | Solo si un administrador le concede «acceso a finanzas» |
-| Eliminar proyectos, cobros, pagos, gastos | ✅ | ❌ |
-| Documentos | Todos | Los de sus proyectos/clientes; justificantes de gasto solo con acceso a finanzas |
+| Eliminar proyectos, cobros, pagos, gastos | ✅ | ❌ (los clientes solo con el permiso «eliminar clientes») |
+| Documentos | Todos | Todos (los justificantes de gasto solo con acceso a finanzas) |
 
 La búsqueda global, las notificaciones, el historial de actividad y las exportaciones CSV se ejecutan con la sesión del
 usuario, así que RLS filtra automáticamente lo que no puede ver.
