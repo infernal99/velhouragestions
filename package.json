@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "seed:demo": "node scripts/seed-demo.mjs",
     "db:types": "supabase gen types typescript --project-id \"$SUPABASE_PROJECT_ID\" > src/types/supabase.generated.ts",
-    "check": "npm run typecheck && npm run lint && npm test && npm run build"
+    "check": "npm run typecheck && npm run lint && npm test && npm run build",
+    "user:create": "node --env-file=.env.local scripts/create-user.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -54,6 +55,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
+    "pg": "^8.23.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^3.2.7"

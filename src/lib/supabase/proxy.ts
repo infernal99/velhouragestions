@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isSupabaseConfigured, supabasePublishableKey, supabaseUrl } from "@/lib/env";
 
-const PUBLIC_PATHS = ["/login", "/registro", "/recuperar", "/auth", "/invitacion", "/configuracion-pendiente"];
+const PUBLIC_PATHS = ["/login", "/recuperar", "/auth", "/invitacion", "/configuracion-pendiente"];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
@@ -43,7 +43,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (userId && (pathname === "/login" || pathname === "/registro")) {
+  if (userId && (pathname === "/login")) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 

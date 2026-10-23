@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { fail, fromDbError, fromZod, ok, type ActionResult } from "@/lib/actions/result";
 import { run } from "@/lib/actions/guard";
-import { companySchema, forgotSchema, loginSchema, newPasswordSchema, registerSchema } from "@/lib/validation/auth";
+import { companySchema, forgotSchema, loginSchema, newPasswordSchema } from "@/lib/validation/auth";
 import { siteUrl } from "@/lib/env";
 
 /** Only allow same-site relative redirects (prevents open redirects). */
@@ -31,29 +31,6 @@ export async function signIn(input: unknown, next?: string): Promise<ActionResul
     return fail("Correo o contraseña incorrectos.");
   }
   redirect(safeNext(next));
-}
-
-export async function signUp(input: unknown, next?: string): Promise<ActionResult<{ needsConfirmation: boolean }>> {
-  const parsed = registerSchema.safeParse(input);
-  if (!parsed.success) return fromZod(parsed.error);
-
-  const supabase = await createClient();
-  const base = await origin();
-  const { data, error } = await supabase.auth.signUp({
-    email: parsed.data.email,
-    password: parsed.data.password,
-    options: {
-      data: { full_name: parsed.data.fullName },
-      emailRedirectTo: `${base}/auth/callback?next=${encodeURIComponent(safeNext(next))}`,
-    },
-  });
-  if (error) {
-    if (error.code === "user_already_exists") return fail("Ya existe una cuenta con este correo.");
-    if (error.code === "signup_disabled") return fail("El registro está desactivado. Pide una invitación a un administrador.");
-    return fail("No se pudo crear la cuenta. Inténtalo de nuevo.");
-  }
-  if (data.session) redirect(safeNext(next));
-  return ok({ needsConfirmation: true });
 }
 
 export async function requestPasswordReset(input: unknown): Promise<ActionResult> {

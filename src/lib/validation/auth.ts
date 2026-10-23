@@ -12,12 +12,6 @@ const password = z
   .regex(/[A-Za-z]/, "Incluye al menos una letra")
   .regex(/\d/, "Incluye al menos un número");
 
-export const registerSchema = z.object({
-  fullName: z.string().trim().min(2, "Introduce tu nombre").max(120),
-  email: z.email("Introduce un correo válido"),
-  password,
-});
-
 export const forgotSchema = z.object({ email: z.email("Introduce un correo válido") });
 
 export const newPasswordSchema = z
@@ -29,4 +23,3 @@ export const companySchema = z.object({
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
-export type RegisterInput = z.infer<typeof registerSchema>;

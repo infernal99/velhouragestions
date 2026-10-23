@@ -27,6 +27,8 @@ export type TestDb = Awaited<ReturnType<typeof createTestDb>>;
 /** Insert an auth user (the profile is created by the trigger). */
 export async function createUser(db: TestDb, email: string) {
   const id = randomUUID();
+  // accounts only exist for allow-listed emails (closed registration)
+  await db.query("insert into public.allowed_emails (email) values (lower($1)) on conflict do nothing", [email]);
   await db.query("insert into auth.users (id, email) values ($1, $2)", [id, email]);
   return id;
 }

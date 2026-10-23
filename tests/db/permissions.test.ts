@@ -444,3 +444,17 @@ describe("storage object access follows the files table", () => {
     expect(visible.map((o) => o.name)).not.toContain(`${companyA}/secreto.pdf`);
   });
 });
+
+describe("closed registration", () => {
+  it("rejects accounts whose email is not allow-listed, even via direct inserts", async () => {
+    await expect(
+      db.query("insert into auth.users (id, email) values (gen_random_uuid(), 'intruso@example.test')"),
+    ).rejects.toThrow(/registro está cerrado/);
+  });
+
+  it("accepts allow-listed emails case-insensitively and the allow-list is not readable by users", async () => {
+    await db.query("insert into public.allowed_emails (email) values ('permitido@example.test')");
+    await db.query("insert into auth.users (id, email) values (gen_random_uuid(), 'Permitido@Example.test')");
+    await expect(asUser(db, admin, (tx) => tx.query("select * from public.allowed_emails"))).rejects.toThrow(/permission denied/);
+  });
+});

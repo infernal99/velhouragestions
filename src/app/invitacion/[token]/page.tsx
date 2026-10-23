@@ -46,11 +46,7 @@ export default async function InvitationPage({ params }: PageProps<"/invitacion/
                 <AcceptInvitationButton token={token} />
               ) : (
                 <>
-                  <Button render={<Link href={`/registro?next=${encodeURIComponent(next)}`} />} nativeButton={false} size="lg">
-                    Crear cuenta y unirme
-                  </Button>
                   <Button
-                    variant="outline"
                     render={<Link href={`/login?next=${encodeURIComponent(next)}`} />}
                     nativeButton={false}
                     size="lg"

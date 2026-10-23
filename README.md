@@ -119,8 +119,8 @@ usuario, así que RLS filtra automáticamente lo que no puede ver.
    `select cron.schedule('velhoura-due-reminders', '0 7 * * *', 'select public.generate_due_reminders()');`
 4. **Auth → URL Configuration:** *Site URL* = tu dominio; añade `https://tu-dominio/auth/callback` y
    `http://localhost:3000/auth/callback` a *Redirect URLs*.
-5. Cuando estéis todos dentro, puedes desactivar el registro abierto (*Auth → Providers → Email → Allow new users to sign
-   up*). Las invitaciones siguen funcionando si configuras `SUPABASE_SERVICE_ROLE_KEY`.
+5. **Registro cerrado.** Nadie puede crearse una cuenta: la base de datos solo admite correos de la lista `allowed_emails` (un
+   trigger en `auth.users`), aunque alguien llame directamente a la API de Supabase. No hay pantalla de registro.
 
 ### 2. Variables de entorno
 
@@ -137,7 +137,15 @@ npm install
 npm run dev
 ```
 
-Regístrate, crea la empresa (serás administrador) e invita a tu compañero desde **Equipo**.
+Las cuentas se crean a mano (el registro está cerrado):
+
+```bash
+npm run user:create -- ian@empresa.com "Ian" "UnaContraseñaLarga123" admin   # primer administrador (crea la empresa)
+npm run user:create -- oriol@empresa.com "Oriol" "OtraContraseña456" member   # miembro (o admin)
+```
+
+Necesita `DATABASE_URL` en `.env.local`. El mismo comando sirve para restablecer la contraseña de alguien. Las invitaciones de
+**Equipo** solo sirven para unir a la empresa a alguien que ya tiene cuenta.
 
 ### 4. Datos de demostración (solo desarrollo)
 

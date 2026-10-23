@@ -16,14 +16,11 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         </p>
       ) : null}
       <LoginForm next={typeof next === "string" ? next : undefined} />
-      <div className="mt-6 flex items-center justify-between text-sm">
+      <p className="mt-6 text-center text-sm">
         <Link href="/recuperar" className="text-muted-foreground hover:text-foreground">
           ¿Has olvidado la contraseña?
         </Link>
-        <Link href={`/registro${typeof next === "string" ? `?next=${encodeURIComponent(next)}` : ""}`} className="font-medium hover:underline">
-          Crear cuenta
-        </Link>
-      </div>
+      </p>
     </>
   );
 }
