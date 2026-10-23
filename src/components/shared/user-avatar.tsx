@@ -1,4 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { accentChip, accentForName } from "@/lib/accents";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +25,7 @@ export function UserAvatar({
   return (
     <Avatar className={cn(sizes[size], "shrink-0", className)}>
       {src ? <AvatarImage src={src} alt={name ?? ""} /> : null}
-      <AvatarFallback className="bg-muted font-medium text-muted-foreground">{initials(name)}</AvatarFallback>
+      <AvatarFallback className={cn("font-semibold", accentChip[accentForName(name)])}>{initials(name)}</AvatarFallback>
     </Avatar>
   );
 }

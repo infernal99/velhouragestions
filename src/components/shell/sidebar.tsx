@@ -6,6 +6,7 @@ import { useApp } from "@/components/app-provider";
 import { CompanyMark } from "@/components/shell/company-mark";
 import { CompanySwitcher } from "@/components/shell/company-switcher";
 import { isActive, navGroups } from "@/lib/navigation";
+import { accentChip, accentText } from "@/lib/accents";
 import { can } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
@@ -39,12 +40,14 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                       : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
                   )}
                 >
-                  <item.icon
+                  <span
                     className={cn(
-                      "size-4 shrink-0 transition-colors",
-                      active ? "text-brand" : "text-muted-foreground group-hover:text-foreground",
+                      "grid size-6 shrink-0 place-items-center rounded-md transition-colors",
+                      active ? accentChip[item.accent] : "group-hover:bg-muted",
                     )}
-                  />
+                  >
+                    <item.icon className={cn("size-4", active ? "" : cn(accentText[item.accent], "opacity-70 group-hover:opacity-100"))} />
+                  </span>
                   <span className="truncate">{item.label}</span>
                 </Link>
               );

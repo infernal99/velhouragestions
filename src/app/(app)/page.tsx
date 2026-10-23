@@ -116,16 +116,17 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
       />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Proyectos activos" value={activeProjects.count ?? 0} icon={FolderKanban} href="/proyectos" />
+        <StatCard label="Proyectos activos" value={activeProjects.count ?? 0} icon={FolderKanban} href="/proyectos" accent="violet" />
         <StatCard
           label="Tareas pendientes"
           value={openTasks.count ?? 0}
           icon={CheckSquare}
+          accent="sky"
           href="/tareas"
           hint={overdueTasks.count ? <span className="font-medium text-destructive">{overdueTasks.count} vencidas</span> : "Ninguna vencida"}
         />
-        <StatCard label="Clientes activos" value={clientCount} icon={Building2} href="/clientes" hint="Con proyectos en curso" />
-        <StatCard label="Próximos 7 días" value={events.data?.length ?? 0} icon={CalendarDays} href="/calendario" hint="Reuniones y eventos" />
+        <StatCard label="Clientes activos" value={clientCount} icon={Building2} accent="orange" href="/clientes" hint="Con proyectos en curso" />
+        <StatCard label="Próximos 7 días" value={events.data?.length ?? 0} icon={CalendarDays} accent="rose" href="/calendario" hint="Reuniones y eventos" />
       </div>
 
       {finance && s ? (
@@ -135,19 +136,21 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
             <PeriodSelect value={period.key} />
           </div>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <StatCard label="Cobros recibidos" value={formatMoney(s.collected, c)} icon={Wallet} href="/finanzas/cobros" hint={`Facturado: ${formatMoney(s.invoiced, c)}`} />
+            <StatCard label="Cobros recibidos" value={formatMoney(s.collected, c)} icon={Wallet} accent="emerald" href="/finanzas/cobros" hint={`Facturado: ${formatMoney(s.invoiced, c)}`} />
             <StatCard
               label="Pendiente de cobro"
               value={formatMoney(s.pending, c)}
               icon={AlertTriangle}
+              accent="amber"
               href="/finanzas/cobros"
               hint={Number(s.overdue) > 0 ? <span className="font-medium text-destructive">{formatMoney(s.overdue, c)} vencido</span> : "Total a día de hoy"}
             />
-            <StatCard label="Gastos" value={formatMoney(s.expenses, c)} icon={Receipt} href="/finanzas/gastos" />
+            <StatCard label="Gastos" value={formatMoney(s.expenses, c)} icon={Receipt} accent="rose" href="/finanzas/gastos" />
             <StatCard
               label="Beneficio estimado"
               value={formatMoney(s.profit, c)}
               icon={TrendingUp}
+              accent="teal"
               tone={Number(s.profit) < 0 ? "danger" : undefined}
               hint="Cobrado − gastos"
               href="/finanzas"

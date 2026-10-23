@@ -14,11 +14,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { Capability } from "@/lib/permissions";
+import type { Accent } from "@/lib/accents";
 
 export interface NavItem {
   href: string;
   label: string;
   icon: LucideIcon;
+  accent: Accent;
   requires?: Capability;
 }
 
@@ -30,35 +32,35 @@ export interface NavGroup {
 export const navGroups: NavGroup[] = [
   {
     items: [
-      { href: "/", label: "Inicio", icon: Home },
-      { href: "/tareas", label: "Tareas", icon: CheckSquare },
-      { href: "/calendario", label: "Calendario", icon: CalendarDays },
+      { href: "/", label: "Inicio", icon: Home, accent: "brand" },
+      { href: "/tareas", label: "Tareas", icon: CheckSquare, accent: "sky" },
+      { href: "/calendario", label: "Calendario", icon: CalendarDays, accent: "rose" },
     ],
   },
   {
     label: "Trabajo",
     items: [
-      { href: "/proyectos", label: "Proyectos", icon: FolderKanban },
-      { href: "/webs", label: "Webs en desarrollo", icon: Globe },
-      { href: "/clientes", label: "Clientes", icon: Building2 },
-      { href: "/documentos", label: "Documentos", icon: FileText },
+      { href: "/proyectos", label: "Proyectos", icon: FolderKanban, accent: "violet" },
+      { href: "/webs", label: "Webs en desarrollo", icon: Globe, accent: "teal" },
+      { href: "/clientes", label: "Clientes", icon: Building2, accent: "orange" },
+      { href: "/documentos", label: "Documentos", icon: FileText, accent: "amber" },
     ],
   },
   {
     label: "Finanzas",
     items: [
-      { href: "/finanzas", label: "Resumen", icon: Wallet, requires: "finances" },
-      { href: "/finanzas/presupuestos", label: "Presupuestos", icon: FileText, requires: "finances" },
-      { href: "/finanzas/cobros", label: "Cobros", icon: Receipt, requires: "finances" },
-      { href: "/finanzas/gastos", label: "Gastos", icon: Receipt, requires: "finances" },
+      { href: "/finanzas", label: "Resumen", icon: Wallet, accent: "emerald", requires: "finances" },
+      { href: "/finanzas/presupuestos", label: "Presupuestos", icon: FileText, accent: "emerald", requires: "finances" },
+      { href: "/finanzas/cobros", label: "Cobros", icon: Receipt, accent: "emerald", requires: "finances" },
+      { href: "/finanzas/gastos", label: "Gastos", icon: Receipt, accent: "rose", requires: "finances" },
     ],
   },
   {
     label: "Empresa",
     items: [
-      { href: "/equipo", label: "Equipo", icon: Users },
-      { href: "/actividad", label: "Actividad", icon: Activity },
-      { href: "/ajustes", label: "Ajustes", icon: Settings, requires: "settings" },
+      { href: "/equipo", label: "Equipo", icon: Users, accent: "sky" },
+      { href: "/actividad", label: "Actividad", icon: Activity, accent: "violet" },
+      { href: "/ajustes", label: "Ajustes", icon: Settings, accent: "brand", requires: "settings" },
     ],
   },
 ];
