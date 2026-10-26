@@ -6,6 +6,7 @@ import { requireContext } from "@/lib/auth/context";
 import { createClient } from "@/lib/supabase/server";
 import { listTasks } from "@/lib/queries/tasks";
 import { resolvePeriod } from "@/lib/periods";
+import { getQuotePipeline } from "@/lib/queries/finance";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { Panel } from "@/components/shared/info-list";
@@ -44,6 +45,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
     activity,
     summary,
     monthly,
+    pipeline,
   ] = await Promise.all([
     supabase
       .from("projects")
@@ -97,6 +99,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
       ? supabase.rpc("finance_summary", { p_company: ctx.company.id, p_from: period.from, p_to: period.to })
       : Promise.resolve({ data: null }),
     finance ? supabase.rpc("finance_monthly", { p_company: ctx.company.id, p_months: 6 }) : Promise.resolve({ data: null }),
+    finance ? getQuotePipeline(supabase, ctx.company.id) : Promise.resolve({ count: 0, total: 0 }),
   ]);
 
   // "Mi día": overdue + due today first, then the next few with or without date.
@@ -139,11 +142,19 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
             <StatCard label="Cobros recibidos" value={formatMoney(s.collected, c)} icon={Wallet} accent="emerald" href="/finanzas/cobros" hint={`Facturado: ${formatMoney(s.invoiced, c)}`} />
             <StatCard
               label="Pendiente de cobro"
-              value={formatMoney(s.pending, c)}
+              value={formatMoney(Number(s.pending) + pipeline.total, c)}
               icon={AlertTriangle}
               accent="amber"
               href="/finanzas/cobros"
-              hint={Number(s.overdue) > 0 ? <span className="font-medium text-destructive">{formatMoney(s.overdue, c)} vencido</span> : "Total a día de hoy"}
+              hint={
+                Number(s.overdue) > 0 ? (
+                  <span className="font-medium text-destructive">{formatMoney(s.overdue, c)} vencido</span>
+                ) : pipeline.total > 0 ? (
+                  `${formatMoney(s.pending, c)} facturado + ${formatMoney(pipeline.total, c)} en presupuestos`
+                ) : (
+                  "Total a día de hoy"
+                )
+              }
             />
             <StatCard label="Gastos" value={formatMoney(s.expenses, c)} icon={Receipt} accent="rose" href="/finanzas/gastos" />
             <StatCard

@@ -17,3 +17,9 @@ describe("resolvePeriod", () => {
     expect(resolvePeriod("hack';--", now).key).toBe("mes");
   });
 });
+
+describe("all-time period", () => {
+  it("covers everything", () => {
+    expect(resolvePeriod("todo", new Date(2026, 9, 23))).toMatchObject({ key: "todo", from: "2000-01-01", to: "2100-12-31", label: "Todo el tiempo" });
+  });
+});

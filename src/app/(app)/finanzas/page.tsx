@@ -5,6 +5,7 @@ import { ExportButton } from "@/components/shared/export-button";
 import { requireCapability } from "@/lib/auth/context";
 import { createClient } from "@/lib/supabase/server";
 import { resolvePeriod } from "@/lib/periods";
+import { getQuotePipeline } from "@/lib/queries/finance";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { Panel } from "@/components/shared/info-list";
@@ -41,7 +42,7 @@ export default async function FinancePage({ searchParams }: PageProps<"/finanzas
   const supabase = await createClient();
   const c = ctx.company.currency;
 
-  const [summary, monthly, profitability, expensesByCat, recurring] = await Promise.all([
+  const [summary, monthly, profitability, expensesByCat, recurring, pipeline] = await Promise.all([
     supabase.rpc("finance_summary", { p_company: ctx.company.id, p_from: period.from, p_to: period.to }),
     supabase.rpc("finance_monthly", { p_company: ctx.company.id, p_months: 12 }),
     supabase.rpc("project_profitability", { p_company: ctx.company.id }),
@@ -53,6 +54,7 @@ export default async function FinancePage({ searchParams }: PageProps<"/finanzas
       .lte("expense_date", period.to)
       .returns<{ amount: number; tax_amount: number; category: { name: string; color: string } | null }[]>(),
     supabase.from("recurring_payments").select("amount").eq("company_id", ctx.company.id).eq("status", "activo"),
+    getQuotePipeline(supabase, ctx.company.id),
   ]);
   const recurringTotal = (recurring.data ?? []).reduce((sum, r) => sum + Number(r.amount), 0);
 
@@ -94,7 +96,12 @@ export default async function FinancePage({ searchParams }: PageProps<"/finanzas
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
         <StatCard label="Facturación registrada" value={formatMoney(s.invoiced, c)} hint="Cobros emitidos en el periodo" />
         <StatCard label="Cobros recibidos" value={formatMoney(s.collected, c)} hint="Dinero que ha entrado" href="/finanzas/cobros" />
-        <StatCard label="Pendiente de cobro" value={formatMoney(s.pending, c)} hint="Total abierto hoy" href="/finanzas/cobros" />
+        <StatCard
+          label="Pendiente de cobro"
+          value={formatMoney(Number(s.pending) + pipeline.total, c)}
+          hint={pipeline.total > 0 ? `${formatMoney(s.pending, c)} facturado + ${formatMoney(pipeline.total, c)} en presupuestos` : "Total abierto hoy"}
+          href="/finanzas/cobros"
+        />
         <StatCard label="Vencido" value={formatMoney(s.overdue, c)} tone={Number(s.overdue) > 0 ? "danger" : undefined} hint="Pendiente fuera de plazo" />
         <StatCard label="Gastos" value={formatMoney(s.expenses, c)} hint="Base + impuestos" href="/finanzas/gastos" />
         <StatCard label="Pagos mensuales" value={`${formatMoney(recurringTotal, c)}/mes`} hint="Servicios recurrentes activos" href="/finanzas/mensuales" />
@@ -103,7 +110,7 @@ export default async function FinancePage({ searchParams }: PageProps<"/finanzas
 
       <p className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
         <Info className="mt-px size-3.5 shrink-0" />
-        Los presupuestos nunca cuentan como ingreso. La facturación registrada es lo que se ha pedido cobrar; el beneficio
+        Los presupuestos nunca cuentan como ingreso cobrado: el «pendiente» los incluye (hasta que se facturen) pero «Cobros recibidos» y el beneficio solo cuentan dinero que ha entrado. La facturación registrada es lo que se ha pedido cobrar; el beneficio
         estimado usa solo el dinero realmente cobrado menos los gastos (criterio de caja). No sustituye a la contabilidad oficial.
       </p>
 

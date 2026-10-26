@@ -6,6 +6,7 @@ export const periodOptions = [
   { value: "trimestre", label: "Este trimestre" },
   { value: "30d", label: "Últimos 30 días" },
   { value: "anio", label: "Este año" },
+  { value: "todo", label: "Todo el tiempo" },
 ] as const;
 
 export type PeriodKey = (typeof periodOptions)[number]["value"];
@@ -23,6 +24,8 @@ export function resolvePeriod(key: string | undefined, now = new Date()): { key:
       return { key: k, from: f(startOfQuarter(now)), to: f(endOfQuarter(now)), label };
     case "30d":
       return { key: k, from: f(subDays(now, 29)), to: f(now), label };
+    case "todo":
+      return { key: k, from: "2000-01-01", to: "2100-12-31", label };
     case "anio":
       return { key: k, from: f(startOfYear(now)), to: f(endOfYear(now)), label };
     default:
