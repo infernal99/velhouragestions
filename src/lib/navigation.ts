@@ -11,6 +11,7 @@ import {
   Users,
   Wallet,
   Activity,
+  Clock,
   type LucideIcon,
 } from "lucide-react";
 import type { Capability } from "@/lib/permissions";
@@ -35,6 +36,7 @@ export const navGroups: NavGroup[] = [
       { href: "/", label: "Inicio", icon: Home, accent: "brand" },
       { href: "/tareas", label: "Tareas", icon: CheckSquare, accent: "sky" },
       { href: "/calendario", label: "Calendario", icon: CalendarDays, accent: "rose" },
+      { href: "/horas", label: "Horas", icon: Clock, accent: "amber" },
     ],
   },
   {

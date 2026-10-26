@@ -48,6 +48,7 @@ export type FileCategory =
   | "imagen"
   | "recurso_cliente"
   | "justificante"
+  | "factura"
   | "otro";
 
 export interface Profile {
@@ -335,6 +336,7 @@ export interface Receivable {
   reference: string | null;
   notes: string | null;
   amount_paid: number;
+  invoice_file_id: string | null;
   created_at: string;
 }
 
@@ -426,5 +428,17 @@ export interface ActivityEntry {
   entity_label: string | null;
   project_id: string | null;
   metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface TimeEntry {
+  id: string;
+  company_id: string;
+  project_id: string;
+  task_id: string | null;
+  user_id: string;
+  started_at: string;
+  ended_at: string | null;
+  note: string | null;
   created_at: string;
 }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { HandCoins, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { HandCoins, MoreHorizontal, Paperclip, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -19,6 +19,7 @@ import { runAction } from "@/components/forms/use-action-form";
 import { ReceivableFormDialog } from "@/components/finance/receivable-form-dialog";
 import { PaymentDialog } from "@/components/finance/payment-dialog";
 import { deleteReceivable } from "@/lib/actions/finance";
+import { getFileUrl } from "@/lib/actions/files";
 import { receivableStatusMap } from "@/lib/labels";
 import { formatDate, formatMoney } from "@/lib/format";
 import type { ReceivableWithStatus } from "@/types/database";
@@ -91,6 +92,21 @@ export function ReceivablesTable({ rows, hideProject }: { rows: ReceivableRow[];
             header: "",
             cell: (r) => (
               <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                {r.invoice_file_id ? (
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    aria-label="Ver factura PDF"
+                    title="Ver factura"
+                    onClick={async () => {
+                      const res = await getFileUrl(r.invoice_file_id!);
+                      if (res.ok) window.open(res.data.url, "_blank", "noopener");
+                      else await runAction(Promise.resolve(res));
+                    }}
+                  >
+                    <Paperclip />
+                  </Button>
+                ) : null}
                 {r.status !== "pagado" ? (
                   <Button size="xs" variant="outline" onClick={() => setPaying(r)}>
                     <HandCoins /> Pago
@@ -114,7 +130,7 @@ export function ReceivablesTable({ rows, hideProject }: { rows: ReceivableRow[];
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => setEditing(r)}>
-                          <Pencil /> Editar
+                          <Pencil /> {r.invoice_file_id ? "Editar / cambiar factura" : "Editar / adjuntar factura"}
                         </DropdownMenuItem>
                         {permissions.isAdmin ? (
                           <DropdownMenuItem variant="destructive" onClick={openDelete}>

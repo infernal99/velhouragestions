@@ -14,7 +14,7 @@ const registerSchema = z.object({
   name: z.string().trim().min(1).max(255),
   mime_type: z.string().max(200).nullable(),
   size_bytes: z.number().int().min(0).max(MAX_FILE_BYTES),
-  category: z.enum(["briefing", "diseno", "contrato", "presupuesto", "tecnico", "imagen", "recurso_cliente", "justificante", "otro"]),
+  category: z.enum(["briefing", "diseno", "contrato", "presupuesto", "tecnico", "imagen", "recurso_cliente", "justificante", "factura", "otro"]),
   project_id: optionalUuid,
   client_id: optionalUuid,
   task_id: optionalUuid,

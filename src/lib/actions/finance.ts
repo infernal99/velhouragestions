@@ -181,14 +181,15 @@ export async function createReceivableFromQuote(id: string): Promise<ActionResul
 // ---------------------------------------------------------------------------
 // Receivables + payments
 // ---------------------------------------------------------------------------
-export async function saveReceivable(id: string | null, input: unknown): Promise<ActionResult> {
+export async function saveReceivable(id: string | null, input: unknown, invoiceFileId?: string | null): Promise<ActionResult> {
   return run(async () => {
     const parsed = receivableSchema.safeParse(input);
     if (!parsed.success) return fromZod(parsed.error);
     const ctx = await actionContext("finances");
+    const values = { ...parsed.data, ...(invoiceFileId !== undefined ? { invoice_file_id: invoiceFileId } : {}) };
     const { error } = id
-      ? await ctx.supabase.from("receivables").update(parsed.data).eq("id", id).eq("company_id", ctx.company.id)
-      : await ctx.supabase.from("receivables").insert({ ...parsed.data, company_id: ctx.company.id, created_by: ctx.userId });
+      ? await ctx.supabase.from("receivables").update(values).eq("id", id).eq("company_id", ctx.company.id)
+      : await ctx.supabase.from("receivables").insert({ ...values, company_id: ctx.company.id, created_by: ctx.userId });
     if (error) {
       if (error.message.includes("receivables_paid_range")) {
         return fail("El importe no puede ser menor que lo ya cobrado.", { amount: "Menor que lo ya cobrado" });

@@ -5,6 +5,10 @@ import { CalendarClock, ChevronLeft } from "lucide-react";
 import { requireContext } from "@/lib/auth/context";
 import { createClient } from "@/lib/supabase/server";
 import { listTasks } from "@/lib/queries/tasks";
+import { currentTimeMs, getRunningEntry, listTimeEntries } from "@/lib/queries/time";
+import { TimerCard } from "@/components/time/timer-card";
+import { HoursSummary } from "@/components/time/hours-summary";
+import { EntriesList } from "@/components/time/entries-list";
 import { OptionBadge, StatusBadge } from "@/components/shared/status-badge";
 import { ProgressBar } from "@/components/shared/progress-bar";
 import { TabLinks } from "@/components/shared/tab-links";
@@ -57,6 +61,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
     { value: "resumen", label: "Resumen" },
     { value: "tareas", label: "Tareas" },
     ...(isWeb ? [{ value: "web", label: "Ficha web" }] : []),
+    { value: "horas", label: "Horas" },
     { value: "archivos", label: "Archivos" },
     ...(finance ? [{ value: "finanzas", label: "Cobros y gastos" }] : []),
     { value: "actividad", label: "Actividad" },
@@ -108,6 +113,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
       {tab === "resumen" ? <Overview project={project} ownerName={owner ? owner.full_name || owner.email : null} memberIds={memberIds} currency={ctx.company.currency} /> : null}
       {tab === "tareas" ? <TasksTab companyId={ctx.company.id} projectId={project.id} /> : null}
       {tab === "web" ? <WebSection projectId={project.id} canManage={canManage} /> : null}
+      {tab === "horas" ? <HoursTab projectId={project.id} /> : null}
       {tab === "archivos" ? <FilesTab projectId={project.id} clientId={project.client_id} /> : null}
       {tab === "finanzas" ? <ProjectFinance projectId={project.id} budget={project.budget} clientId={project.client_id} /> : null}
       {tab === "actividad" ? <ActivityTab projectId={project.id} /> : null}
@@ -238,5 +244,24 @@ async function ActivityTab({ projectId }: { projectId: string }) {
     <Panel>
       <ActivityFeed items={data ?? []} />
     </Panel>
+  );
+}
+
+async function HoursTab({ projectId }: { projectId: string }) {
+  const ctx = await requireContext();
+  const [running, entries] = await Promise.all([
+    getRunningEntry(ctx.userId),
+    listTimeEntries(ctx.company.id, { projectId }),
+  ]);
+  const now = currentTimeMs();
+  return (
+    <div className="flex flex-col gap-5">
+      <TimerCard running={running} defaultProjectId={projectId} />
+      <HoursSummary entries={entries} team={ctx.team} now={now} showProjects={false} />
+      <div>
+        <h2 className="mb-3 text-sm font-semibold">Fichajes de este proyecto</h2>
+        <EntriesList entries={entries} showProject={false} now={now} />
+      </div>
+    </div>
   );
 }

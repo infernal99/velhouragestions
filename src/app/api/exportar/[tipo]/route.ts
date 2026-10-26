@@ -150,6 +150,32 @@ export async function GET(request: NextRequest, ctxRoute: RouteContext<"/api/exp
       ]);
       break;
     }
+    case "horas": {
+      let q = supabase
+        .from("time_entries")
+        .select("*, project:projects(name), task:tasks(title)")
+        .eq("company_id", ctx.company.id)
+        .order("started_at");
+      if (range) q = q.gte("started_at", range.from + "T00:00:00Z").lte("started_at", range.to + "T23:59:59Z");
+      const { data } = await q;
+      headers = ["Fecha", "Persona", "Proyecto", "Tarea", "Inicio", "Fin", "Horas", "Nota"];
+      rows = (data ?? []).map((t) => {
+        const end = t.ended_at ? Date.parse(t.ended_at) : Date.now();
+        const hours = Math.round(((end - Date.parse(t.started_at)) / 3_600_000) * 100) / 100;
+        const hm = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }) : "");
+        return [
+          new Date(t.started_at).toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" }),
+          name(t.user_id),
+          t.project?.name,
+          t.task?.title,
+          hm(t.started_at),
+          hm(t.ended_at),
+          hours,
+          t.note,
+        ];
+      });
+      break;
+    }
     case "tareas": {
       const { data } = await supabase
         .from("tasks")

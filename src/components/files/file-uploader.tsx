@@ -46,7 +46,7 @@ export async function uploadFile(companyId: string, file: File, category: FileCa
     project_id: target.project_id ?? null,
     client_id: target.client_id ?? null,
     task_id: target.task_id ?? null,
-    is_finance: target.is_finance ?? false,
+    is_finance: target.is_finance ?? category === "factura",
   });
   if (!res.ok) {
     toast.error(res.error);
@@ -66,7 +66,7 @@ export function FileUploader({
   compact?: boolean;
   onUploaded?: () => void;
 }) {
-  const { company } = useApp();
+  const { company, permissions } = useApp();
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [category, setCategory] = useState<FileCategory>(defaultCategory);
@@ -116,7 +116,7 @@ export function FileUploader({
         <SimpleSelect
           value={category}
           onChange={(v) => setCategory((v as FileCategory) ?? "otro")}
-          options={fileCategoryOptions.filter((o) => o.value !== "justificante").map((o) => ({ value: o.value, label: o.label }))}
+          options={fileCategoryOptions.filter((o) => o.value !== "justificante" && (o.value !== "factura" || permissions.canViewFinances)).map((o) => ({ value: o.value, label: o.label }))}
           className="h-7 w-auto min-w-40"
         />
       ) : null}

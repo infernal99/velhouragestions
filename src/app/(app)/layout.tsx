@@ -8,11 +8,14 @@ import { SearchCommand } from "@/components/shell/search-command";
 import { NotificationBell } from "@/components/shell/notification-bell";
 import { UserMenu } from "@/components/shell/user-menu";
 import { QuickCreate } from "@/components/shell/quick-create";
+import { TimerChip } from "@/components/time/timer-chip";
+import { getRunningEntry } from "@/lib/queries/time";
 import { CreateDialogsProvider } from "@/components/create/create-dialogs";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await requireContext();
   const supabase = await createClient();
+  const running = await getRunningEntry(ctx.userId);
   const { count: unread } = await supabase
     .from("notifications")
     .select("id", { count: "exact", head: true })
@@ -49,6 +52,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <div className="flex flex-1 items-center">
                 <SearchCommand />
               </div>
+              <TimerChip running={running} />
               <QuickCreate />
               <NotificationBell initialUnread={unread ?? 0} />
               <UserMenu avatarUrl={ctx.profile.avatar_url} email={ctx.profile.email} />

@@ -478,3 +478,80 @@ describe("closed registration", () => {
     await expect(asUser(db, admin, (tx) => tx.query("select * from public.allowed_emails"))).rejects.toThrow(/permission denied/);
   });
 });
+
+describe("time tracking", () => {
+  let project: string;
+
+  beforeAll(async () => {
+    project = (await asUser(db, admin, (tx) =>
+      one(rows<{ id: string }>(tx, "insert into public.projects (company_id, name, owner_id, created_by) values ($1, 'Horas', $2, $2) returning id", [companyA, admin])),
+    )).id;
+  });
+
+  it("only one running timer per person", async () => {
+    await asUser(db, member, (tx) =>
+      tx.query("insert into public.time_entries (company_id, project_id, user_id, started_at) values ($1, $2, $3, now())", [companyA, project, member]),
+    );
+    await expect(
+      asUser(db, member, (tx) =>
+        tx.query("insert into public.time_entries (company_id, project_id, user_id, started_at) values ($1, $2, $3, now())", [companyA, project, member]),
+      ),
+    ).rejects.toThrow(/duplicate key/);
+    await asUser(db, member, (tx) => tx.query("update public.time_entries set ended_at = now() where user_id = $1 and ended_at is null", [member]));
+  });
+
+  it("nobody can clock hours as someone else", async () => {
+    await expect(
+      asUser(db, member, (tx) =>
+        tx.query(
+          "insert into public.time_entries (company_id, project_id, user_id, started_at, ended_at) values ($1, $2, $3, now() - interval '1 hour', now())",
+          [companyA, project, admin],
+        ),
+      ),
+    ).rejects.toThrow(/row-level security/);
+  });
+
+  it("the team sees everyone's hours, but only the owner (or an admin) edits them", async () => {
+    await asUser(db, member, (tx) =>
+      tx.query(
+        "insert into public.time_entries (company_id, project_id, user_id, started_at, ended_at, note) values ($1, $2, $3, now() - interval '3 hours', now() - interval '1 hour', 'Maquetación')",
+        [companyA, project, member],
+      ),
+    );
+    const adminSees = await asUser(db, admin, (tx) => rows(tx, "select 1 from public.time_entries where note = 'Maquetación'"));
+    expect(adminSees).toHaveLength(1);
+    // an admin may correct it; a different member may not
+    const upd = await asUser(db, admin, (tx) => tx.query("update public.time_entries set note = 'Maquetación web' where note = 'Maquetación'"));
+    expect(upd.affectedRows).toBe(1);
+  });
+
+  it("rejects entries longer than 24 h, negative ones and projects of another company", async () => {
+    await expect(
+      asUser(db, member, (tx) =>
+        tx.query("insert into public.time_entries (company_id, project_id, user_id, started_at, ended_at) values ($1, $2, $3, now() - interval '30 hours', now())", [companyA, project, member]),
+      ),
+    ).rejects.toThrow(/time_entries_max_24h/);
+    await expect(
+      asUser(db, member, (tx) =>
+        tx.query("insert into public.time_entries (company_id, project_id, user_id, started_at, ended_at) values ($1, $2, $3, now(), now() - interval '1 hour')", [companyA, project, member]),
+      ),
+    ).rejects.toThrow(/time_entries_order/);
+    const foreignProject = (await asUser(db, outsider, (tx) =>
+      one(rows<{ id: string }>(tx, "insert into public.projects (company_id, name, created_by) values ($1, 'Ajeno', $2) returning id", [companyB, outsider])),
+    )).id;
+    await expect(
+      asUser(db, member, (tx) =>
+        tx.query("insert into public.time_entries (company_id, project_id, user_id, started_at, ended_at) values ($1, $2, $3, now() - interval '1 hour', now())", [companyA, foreignProject, member]),
+      ),
+    ).rejects.toThrow(/no pertenece/);
+  });
+
+  it("outsiders see no hours and the summary adds up per project", async () => {
+    const outsiderSees = await asUser(db, outsider, (tx) => rows(tx, "select 1 from public.time_entries"));
+    expect(outsiderSees).toHaveLength(0);
+    const summary = await asUser(db, admin, (tx) =>
+      rows<{ minutes: string }>(tx, "select minutes from public.time_summary($1, now() - interval '1 day', now() + interval '1 day') where project_id = $2", [companyA, project]),
+    );
+    expect(Number(summary[0].minutes)).toBe(120);
+  });
+});

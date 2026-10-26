@@ -183,6 +183,7 @@ export const fileCategoryOptions: Option<FileCategory>[] = [
   { value: "tecnico", label: "Documentación técnica" },
   { value: "imagen", label: "Imágenes" },
   { value: "recurso_cliente", label: "Recurso del cliente" },
+  { value: "factura", label: "Factura" },
   { value: "justificante", label: "Justificante de gasto" },
   { value: "otro", label: "Otro" },
 ];

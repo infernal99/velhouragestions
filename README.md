@@ -72,6 +72,7 @@ Migraciones en `supabase/migrations` (orden por fecha):
 | `files_notifications_activity` | `files` + buckets de Storage, `notifications`, `activity_log`, `global_search`, recordatorios diarios |
 | `finance_stats` | `finance_summary`, `finance_monthly`, `project_profitability` |
 | `quote_lines_rpc` | `replace_quote_lines` (guardado atómico de líneas) |
+| `invoices_and_time` | factura PDF adjunta a cada cobro (`receivables.invoice_file_id`, categoría de archivo `factura`) y fichaje de horas (`time_entries`, `time_summary`) |
 | `privacy_options` | opción «los miembros ven todos los clientes»; recordatorios que respetan las preferencias |
 
 Reglas importantes que impone la base de datos:
