@@ -2,6 +2,8 @@ import Link from "next/link";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { Panel } from "@/components/shared/info-list";
 import { entryMinutes, formatDuration, formatHours } from "@/lib/time";
+import { ColumnChart } from "@/components/charts/simple-charts";
+import { formatDate } from "@/lib/format";
 import { accentChip, accentForName } from "@/lib/accents";
 import { cn } from "@/lib/utils";
 import type { TimeEntryRow } from "@/lib/queries/time";
@@ -45,6 +47,17 @@ export function HoursSummary({
     byPerson.set(e.user_id, (byPerson.get(e.user_id) ?? 0) + m);
   }
   const projects = [...byProject.values()].sort((a, b) => b.minutes - a.minutes);
+
+  // hours per calendar day (app timezone), oldest first, capped to the latest 31 days
+  const byDay = new Map<string, number>();
+  for (const e of entries) {
+    const day = formatDate(e.started_at, "yyyy-MM-dd");
+    byDay.set(day, (byDay.get(day) ?? 0) + entryMinutes(e, now));
+  }
+  const dayData = [...byDay.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .slice(-31)
+    .map(([day, minutes]) => ({ label: formatDate(day, "EEE d"), value: Math.round((minutes / 60) * 10) / 10 }));
   const people = [...byPerson.entries()].sort((a, b) => b[1] - a[1]);
 
   return (
@@ -64,6 +77,10 @@ export function HoursSummary({
           <p className="mt-2 text-2xl font-semibold tabular">{entries.length ? formatDuration(total / entries.length) : "—"}</p>
         </div>
       </div>
+
+      <Panel title="Horas por día">
+        <ColumnChart data={dayData} color="#f59e0b" height={200} />
+      </Panel>
 
       <div className={cn("grid gap-5", showProjects && "lg:grid-cols-2")}>
         {showProjects ? (

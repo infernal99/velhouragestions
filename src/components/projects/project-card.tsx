@@ -11,6 +11,16 @@ import { formatDate, isOverdue } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Project } from "@/types/database";
 
+const STATUS_EDGE: Record<string, string> = {
+  pendiente: "#94a3b8",
+  planificado: "#0ea5e9",
+  en_desarrollo: "#6366f1",
+  revision: "#f59e0b",
+  entregado: "#10b981",
+  pausado: "#a1a1aa",
+  cancelado: "#f43f5e",
+};
+
 export function ProjectCard({
   project,
   clientName,
@@ -30,7 +40,8 @@ export function ProjectCard({
     <Link
       href={`/proyectos/${project.id}`}
       draggable={false}
-      className="group flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-xs transition-all duration-200 ease-out hover:-translate-y-px hover:border-foreground/15 hover:shadow-sm"
+      style={{ borderLeftColor: STATUS_EDGE[project.status] }}
+      className="group flex flex-col gap-3 rounded-xl border border-l-[3px] bg-card p-4 shadow-xs transition-all duration-200 ease-out hover:-translate-y-px hover:border-foreground/15 hover:shadow-sm"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">

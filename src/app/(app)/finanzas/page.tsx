@@ -6,6 +6,9 @@ import { requireCapability } from "@/lib/auth/context";
 import { createClient } from "@/lib/supabase/server";
 import { resolvePeriod } from "@/lib/periods";
 import { getQuotePipeline } from "@/lib/queries/finance";
+import { StackedHBar } from "@/components/charts/simple-charts";
+import { Money } from "@/components/shared/money";
+import { POSITIVE_COLOR, toneOf } from "@/lib/accents";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { Panel } from "@/components/shared/info-list";
@@ -42,7 +45,7 @@ export default async function FinancePage({ searchParams }: PageProps<"/finanzas
   const supabase = await createClient();
   const c = ctx.company.currency;
 
-  const [summary, monthly, profitability, expensesByCat, recurring, pipeline] = await Promise.all([
+  const [summary, monthly, profitability, expensesByCat, recurring, pipeline, byClient] = await Promise.all([
     supabase.rpc("finance_summary", { p_company: ctx.company.id, p_from: period.from, p_to: period.to }),
     supabase.rpc("finance_monthly", { p_company: ctx.company.id, p_months: 12 }),
     supabase.rpc("project_profitability", { p_company: ctx.company.id }),
@@ -55,7 +58,21 @@ export default async function FinancePage({ searchParams }: PageProps<"/finanzas
       .returns<{ amount: number; tax_amount: number; category: { name: string; color: string } | null }[]>(),
     supabase.from("recurring_payments").select("amount").eq("company_id", ctx.company.id).eq("status", "activo"),
     getQuotePipeline(supabase, ctx.company.id),
+    supabase
+      .from("receivables")
+      .select("amount, amount_paid, client:clients(name)")
+      .eq("company_id", ctx.company.id)
+      .returns<{ amount: number; amount_paid: number; client: { name: string } | null }[]>(),
   ]);
+  const clientTotals = new Map<string, { name: string; a: number; b: number }>();
+  for (const r of byClient.data ?? []) {
+    const name = r.client?.name ?? "Sin cliente";
+    const t = clientTotals.get(name) ?? { name, a: 0, b: 0 };
+    t.a += Number(r.amount_paid);
+    t.b += Number(r.amount) - Number(r.amount_paid);
+    clientTotals.set(name, t);
+  }
+  const clientChart = [...clientTotals.values()].sort((x, y) => y.a + y.b - (x.a + x.b)).slice(0, 8);
   const recurringTotal = (recurring.data ?? []).reduce((sum, r) => sum + Number(r.amount), 0);
 
   const s = (summary.data as Summary[] | null)?.[0] ?? { invoiced: 0, collected: 0, pending: 0, overdue: 0, expenses: 0, profit: 0 };
@@ -94,18 +111,20 @@ export default async function FinancePage({ searchParams }: PageProps<"/finanzas
       />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
-        <StatCard label="Facturación registrada" value={formatMoney(s.invoiced, c)} hint="Cobros emitidos en el periodo" />
-        <StatCard label="Cobros recibidos" value={formatMoney(s.collected, c)} hint="Dinero que ha entrado" href="/finanzas/cobros" />
+        <StatCard label="Facturación registrada" value={formatMoney(s.invoiced, c)} accent="sky" hint="Cobros emitidos en el periodo" />
+        <StatCard label="Cobros recibidos" value={formatMoney(s.collected, c)} valueTone={toneOf(s.collected)} accent="emerald" hint="Dinero que ha entrado" href="/finanzas/cobros" />
         <StatCard
           label="Pendiente de cobro"
           value={formatMoney(Number(s.pending) + pipeline.total, c)}
+          valueTone={Number(s.pending) + pipeline.total > 0 ? "warning" : "neutral"}
+          accent="amber"
           hint={pipeline.total > 0 ? `${formatMoney(s.pending, c)} facturado + ${formatMoney(pipeline.total, c)} en presupuestos` : "Total abierto hoy"}
           href="/finanzas/cobros"
         />
-        <StatCard label="Vencido" value={formatMoney(s.overdue, c)} tone={Number(s.overdue) > 0 ? "danger" : undefined} hint="Pendiente fuera de plazo" />
-        <StatCard label="Gastos" value={formatMoney(s.expenses, c)} hint="Base + impuestos" href="/finanzas/gastos" />
-        <StatCard label="Pagos mensuales" value={`${formatMoney(recurringTotal, c)}/mes`} hint="Servicios recurrentes activos" href="/finanzas/mensuales" />
-        <StatCard label="Beneficio estimado" value={formatMoney(s.profit, c)} tone={Number(s.profit) < 0 ? "danger" : "success"} hint="Cobrado − gastos" />
+        <StatCard label="Vencido" value={formatMoney(s.overdue, c)} accent="rose" valueTone={Number(s.overdue) > 0 ? "negative" : "neutral"} hint="Pendiente fuera de plazo" />
+        <StatCard label="Gastos" value={Number(s.expenses) > 0 ? `−${formatMoney(s.expenses, c)}` : formatMoney(0, c)} valueTone={Number(s.expenses) > 0 ? "negative" : "neutral"} accent="rose" hint="Base + impuestos" href="/finanzas/gastos" />
+        <StatCard label="Pagos mensuales" accent="teal" valueTone={toneOf(recurringTotal)} value={`${formatMoney(recurringTotal, c)}/mes`} hint="Servicios recurrentes activos" href="/finanzas/mensuales" />
+        <StatCard label="Beneficio estimado" value={formatMoney(s.profit, c)} valueTone={toneOf(s.profit)} accent="violet" hint="Cobrado − gastos" />
       </div>
 
       <p className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
@@ -122,6 +141,10 @@ export default async function FinancePage({ searchParams }: PageProps<"/finanzas
           <CategoryChart data={[...byCategory.values()].sort((a, b) => b.value - a.value)} currency={c} />
         </Panel>
       </div>
+
+      <Panel title="Cobrado y pendiente por cliente" className="mt-5">
+        <StackedHBar data={clientChart} aLabel="Cobrado" bLabel="Pendiente" aColor={POSITIVE_COLOR} bColor="#f59e0b" currency={c} height={Math.max(160, clientChart.length * 44)} />
+      </Panel>
 
       <Panel title="Rentabilidad por proyecto" className="mt-5" bodyClassName="p-0">
         {projects.length === 0 ? (
@@ -154,10 +177,10 @@ export default async function FinancePage({ searchParams }: PageProps<"/finanzas
                       <td className="px-4 py-2.5 text-right tabular">{formatMoney(p.invoiced, c)}</td>
                       <td className="px-4 py-2.5 text-right tabular">{formatMoney(p.collected, c)}</td>
                       <td className="px-4 py-2.5 text-right tabular">{formatMoney(p.expenses, c)}</td>
-                      <td className={cn("px-4 py-2.5 text-right font-medium tabular", Number(p.profit) < 0 && "text-destructive")}>
-                        {formatMoney(p.profit, c)}
+                      <td className="px-4 py-2.5 text-right font-medium">
+                        <Money value={p.profit} currency={c} />
                       </td>
-                      <td className="px-4 py-2.5 text-right tabular text-muted-foreground">{margin === null ? "—" : `${margin.toFixed(0)} %`}</td>
+                      <td className={cn("px-4 py-2.5 text-right tabular", margin === null ? "text-muted-foreground" : margin > 0 ? "text-emerald-600 dark:text-emerald-400" : margin < 0 ? "text-red-600 dark:text-red-400" : "")}>{margin === null ? "—" : `${margin.toFixed(0)} %`}</td>
                     </tr>
                   );
                 })}

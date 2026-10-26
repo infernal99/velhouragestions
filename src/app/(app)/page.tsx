@@ -7,6 +7,9 @@ import { createClient } from "@/lib/supabase/server";
 import { listTasks } from "@/lib/queries/tasks";
 import { resolvePeriod } from "@/lib/periods";
 import { getQuotePipeline } from "@/lib/queries/finance";
+import { getOverview } from "@/lib/queries/overview";
+import { DonutChart, HBarChart, ColumnChart } from "@/components/charts/simple-charts";
+import { toneOf } from "@/lib/accents";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { Panel } from "@/components/shared/info-list";
@@ -46,6 +49,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
     summary,
     monthly,
     pipeline,
+    overview,
   ] = await Promise.all([
     supabase
       .from("projects")
@@ -100,6 +104,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
       : Promise.resolve({ data: null }),
     finance ? supabase.rpc("finance_monthly", { p_company: ctx.company.id, p_months: 6 }) : Promise.resolve({ data: null }),
     finance ? getQuotePipeline(supabase, ctx.company.id) : Promise.resolve({ count: 0, total: 0 }),
+    getOverview(supabase, ctx.company.id, ctx.company.project_status_labels ?? {}),
   ]);
 
   // "Mi día": overdue + due today first, then the next few with or without date.
@@ -139,10 +144,11 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
             <PeriodSelect value={period.key} />
           </div>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <StatCard label="Cobros recibidos" value={formatMoney(s.collected, c)} icon={Wallet} accent="emerald" href="/finanzas/cobros" hint={`Facturado: ${formatMoney(s.invoiced, c)}`} />
+            <StatCard label="Cobros recibidos" value={formatMoney(s.collected, c)} valueTone={toneOf(s.collected)} icon={Wallet} accent="emerald" href="/finanzas/cobros" hint={`Facturado: ${formatMoney(s.invoiced, c)}`} />
             <StatCard
               label="Pendiente de cobro"
               value={formatMoney(Number(s.pending) + pipeline.total, c)}
+              valueTone={Number(s.pending) + pipeline.total > 0 ? "warning" : "neutral"}
               icon={AlertTriangle}
               accent="amber"
               href="/finanzas/cobros"
@@ -156,19 +162,37 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
                 )
               }
             />
-            <StatCard label="Gastos" value={formatMoney(s.expenses, c)} icon={Receipt} accent="rose" href="/finanzas/gastos" />
+            <StatCard label="Gastos" value={Number(s.expenses) > 0 ? `−${formatMoney(s.expenses, c)}` : formatMoney(0, c)} valueTone={Number(s.expenses) > 0 ? "negative" : "neutral"} icon={Receipt} accent="rose" href="/finanzas/gastos" />
             <StatCard
               label="Beneficio estimado"
               value={formatMoney(s.profit, c)}
               icon={TrendingUp}
               accent="teal"
-              tone={Number(s.profit) < 0 ? "danger" : undefined}
+              valueTone={toneOf(s.profit)}
               hint="Cobrado − gastos"
               href="/finanzas"
             />
           </div>
         </section>
       ) : null}
+
+      <section className="mt-6">
+        <h2 className="mb-3 text-sm font-semibold">Visión general</h2>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <Panel title="Tareas por estado">
+            <DonutChart data={overview.tasksByStatus} centerLabel="tareas" height={170} />
+          </Panel>
+          <Panel title="Proyectos por estado">
+            <HBarChart data={overview.projectsByStatus} height={250} />
+          </Panel>
+          <Panel title="Embudo comercial" action={<span className="text-[11px] text-muted-foreground">valor estimado</span>}>
+            <HBarChart data={overview.funnel} money currency={c} height={250} empty="Añade clientes con un valor estimado." />
+          </Panel>
+          <Panel title="Horas · últimos 7 días" action={<Link href="/horas" className="text-xs text-muted-foreground hover:text-foreground">Fichar</Link>}>
+            <ColumnChart data={overview.hoursByDay} color="#f59e0b" height={250} />
+          </Panel>
+        </div>
+      </section>
 
       <div className="mt-6 grid gap-5 xl:grid-cols-[1fr_380px]">
         <div className="flex min-w-0 flex-col gap-5">

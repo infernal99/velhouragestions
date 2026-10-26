@@ -4,6 +4,7 @@ import { Panel } from "@/components/shared/info-list";
 import { ReceivablesTable, type ReceivableRow } from "@/components/finance/receivables-table";
 import { ExpensesTable, type ExpenseRow } from "@/components/finance/expenses-table";
 import { formatMoney } from "@/lib/format";
+import { Money } from "@/components/shared/money";
 import { FinanceButtons } from "./finance-buttons";
 
 export async function ProjectFinance({ projectId, budget, clientId }: { projectId: string; budget: number | null; clientId: string | null }) {
@@ -32,10 +33,10 @@ export async function ProjectFinance({ projectId, budget, clientId }: { projectI
   const stats = [
     { label: "Presupuesto acordado", value: budget != null ? formatMoney(budget, c) : "—", hint: "No es un ingreso" },
     { label: "Facturación registrada", value: formatMoney(invoiced, c) },
-    { label: "Cobrado", value: formatMoney(collected, c) },
+    { label: "Cobrado", value: <Money value={collected} currency={c} /> },
     { label: "Pendiente de cobro", value: formatMoney(invoiced - collected, c) },
-    { label: "Gastos", value: formatMoney(spent, c) },
-    { label: "Beneficio estimado", value: formatMoney(collected - spent, c), hint: "Cobrado − gastos", strong: true },
+    { label: "Gastos", value: spent > 0 ? <span className="text-red-600 dark:text-red-400">{`−${formatMoney(spent, c)}`}</span> : formatMoney(0, c) },
+    { label: "Beneficio estimado", value: <Money value={collected - spent} currency={c} />, hint: "Cobrado − gastos", strong: true },
   ];
 
   return (

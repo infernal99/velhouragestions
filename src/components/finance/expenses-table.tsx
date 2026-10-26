@@ -84,7 +84,7 @@ export function ExpensesTable({ rows, hideProject }: { rows: ExpenseRow[]; hideP
             key: "total",
             header: "Total",
             sortValue: (e) => Number(e.amount) + Number(e.tax_amount),
-            cell: (e) => <span className="font-medium">{formatMoney(Number(e.amount) + Number(e.tax_amount), company.currency)}</span>,
+            cell: (e) => <span className="font-medium text-red-600 dark:text-red-400">{`−${formatMoney(Number(e.amount) + Number(e.tax_amount), company.currency)}`}</span>,
             className: "text-right tabular",
             headerClassName: "text-right",
           },

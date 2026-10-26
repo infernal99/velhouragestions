@@ -75,15 +75,19 @@ export function ReceivablesTable({ rows, hideProject }: { rows: ReceivableRow[];
             key: "paid",
             header: "Cobrado",
             sortValue: (r) => Number(r.amount_paid),
-            cell: (r) => formatMoney(r.amount_paid, company.currency),
-            className: "text-right tabular text-muted-foreground",
+            cell: (r) => <span className={Number(r.amount_paid) > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}>{formatMoney(r.amount_paid, company.currency)}</span>,
+            className: "text-right tabular",
             headerClassName: "text-right",
           },
           {
             key: "pending",
             header: "Pendiente",
             sortValue: (r) => Number(r.amount_pending),
-            cell: (r) => <span className={Number(r.amount_pending) > 0 ? "font-medium" : "text-muted-foreground"}>{formatMoney(r.amount_pending, company.currency)}</span>,
+            cell: (r) => (
+              <span className={Number(r.amount_pending) > 0 ? (r.status === "vencido" ? "font-medium text-red-600 dark:text-red-400" : "font-medium text-amber-600 dark:text-amber-400") : "text-emerald-600 dark:text-emerald-400"}>
+                {formatMoney(r.amount_pending, company.currency)}
+              </span>
+            ),
             className: "text-right tabular",
             headerClassName: "text-right",
           },

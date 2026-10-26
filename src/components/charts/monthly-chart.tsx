@@ -30,7 +30,7 @@ function TooltipBox({
         <p key={p.name} className="flex items-center gap-2">
           <span className="size-2 rounded-full" style={{ backgroundColor: p.color }} />
           <span className="text-muted-foreground">{p.name}</span>
-          <span className="ml-auto font-medium tabular">{formatMoney(p.value, currency)}</span>
+          <span className={`ml-auto font-medium tabular ${p.name === "Beneficio" ? (p.value > 0 ? "text-emerald-600 dark:text-emerald-400" : p.value < 0 ? "text-red-600 dark:text-red-400" : "") : p.name === "Gastos" ? "text-red-600 dark:text-red-400" : p.name === "Cobrado" ? "text-emerald-600 dark:text-emerald-400" : ""}`}>{formatMoney(p.value, currency)}</span>
         </p>
       ))}
     </div>
@@ -68,10 +68,10 @@ export function MonthlyChart({ data, currency, showInvoiced = false, height = 26
         />
         <Tooltip cursor={{ fill: "var(--muted)", opacity: 0.5 }} content={<TooltipBox currency={currency} />} />
         <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
-        {showInvoiced ? <Bar dataKey="invoiced" name="Facturado" fill="var(--chart-4)" radius={[4, 4, 0, 0]} maxBarSize={22} /> : null}
-        <Bar dataKey="collected" name="Cobrado" fill="var(--chart-1)" radius={[4, 4, 0, 0]} maxBarSize={22} />
-        <Bar dataKey="expenses" name="Gastos" fill="var(--chart-3)" radius={[4, 4, 0, 0]} maxBarSize={22} />
-        {showInvoiced ? <Line dataKey="profit" name="Beneficio" stroke="var(--chart-2)" strokeWidth={2} dot={false} type="monotone" /> : null}
+        {showInvoiced ? <Bar dataKey="invoiced" name="Facturado" fill="#0ea5e9" radius={[4, 4, 0, 0]} maxBarSize={22} /> : null}
+        <Bar dataKey="collected" name="Cobrado" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={22} />
+        <Bar dataKey="expenses" name="Gastos" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={22} />
+        {showInvoiced ? <Line dataKey="profit" name="Beneficio" stroke="#8b5cf6" strokeWidth={2.5} dot={false} type="monotone" /> : null}
       </Chart>
     </ResponsiveContainer>
   );
