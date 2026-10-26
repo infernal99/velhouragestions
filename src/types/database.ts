@@ -38,6 +38,7 @@ export type PaymentMethod =
   | "stripe"
   | "domiciliacion"
   | "otro";
+export type RecurringStatus = "activo" | "pendiente" | "pausado" | "cancelado";
 export type ReceivableStatus = "pendiente" | "parcial" | "pagado" | "vencido";
 export type FileCategory =
   | "briefing"
@@ -337,6 +338,8 @@ export interface Receivable {
   notes: string | null;
   amount_paid: number;
   invoice_file_id: string | null;
+  recurring_id: string | null;
+  recurring_period: string | null;
   created_at: string;
 }
 
@@ -440,5 +443,18 @@ export interface TimeEntry {
   started_at: string;
   ended_at: string | null;
   note: string | null;
+  created_at: string;
+}
+
+export interface RecurringPayment {
+  id: string;
+  company_id: string;
+  client_id: string | null;
+  project_id: string | null;
+  concept: string;
+  amount: number;
+  status: RecurringStatus;
+  start_date: string;
+  notes: string | null;
   created_at: string;
 }

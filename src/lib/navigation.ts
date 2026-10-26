@@ -11,6 +11,7 @@ import {
   Users,
   Wallet,
   Activity,
+  Repeat,
   Clock,
   type LucideIcon,
 } from "lucide-react";
@@ -54,6 +55,7 @@ export const navGroups: NavGroup[] = [
       { href: "/finanzas", label: "Resumen", icon: Wallet, accent: "emerald", requires: "finances" },
       { href: "/finanzas/presupuestos", label: "Presupuestos", icon: FileText, accent: "emerald", requires: "finances" },
       { href: "/finanzas/cobros", label: "Cobros", icon: Receipt, accent: "emerald", requires: "finances" },
+      { href: "/finanzas/mensuales", label: "Pagos mensuales", icon: Repeat, accent: "teal", requires: "finances" },
       { href: "/finanzas/gastos", label: "Gastos", icon: Receipt, accent: "rose", requires: "finances" },
     ],
   },

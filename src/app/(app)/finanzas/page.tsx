@@ -41,7 +41,7 @@ export default async function FinancePage({ searchParams }: PageProps<"/finanzas
   const supabase = await createClient();
   const c = ctx.company.currency;
 
-  const [summary, monthly, profitability, expensesByCat] = await Promise.all([
+  const [summary, monthly, profitability, expensesByCat, recurring] = await Promise.all([
     supabase.rpc("finance_summary", { p_company: ctx.company.id, p_from: period.from, p_to: period.to }),
     supabase.rpc("finance_monthly", { p_company: ctx.company.id, p_months: 12 }),
     supabase.rpc("project_profitability", { p_company: ctx.company.id }),
@@ -52,7 +52,9 @@ export default async function FinancePage({ searchParams }: PageProps<"/finanzas
       .gte("expense_date", period.from)
       .lte("expense_date", period.to)
       .returns<{ amount: number; tax_amount: number; category: { name: string; color: string } | null }[]>(),
+    supabase.from("recurring_payments").select("amount").eq("company_id", ctx.company.id).eq("status", "activo"),
   ]);
+  const recurringTotal = (recurring.data ?? []).reduce((sum, r) => sum + Number(r.amount), 0);
 
   const s = (summary.data as Summary[] | null)?.[0] ?? { invoiced: 0, collected: 0, pending: 0, overdue: 0, expenses: 0, profit: 0 };
   const months = ((monthly.data as MonthlyPoint[] | null) ?? []).map((m) => ({
@@ -89,12 +91,13 @@ export default async function FinancePage({ searchParams }: PageProps<"/finanzas
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
         <StatCard label="Facturación registrada" value={formatMoney(s.invoiced, c)} hint="Cobros emitidos en el periodo" />
         <StatCard label="Cobros recibidos" value={formatMoney(s.collected, c)} hint="Dinero que ha entrado" href="/finanzas/cobros" />
         <StatCard label="Pendiente de cobro" value={formatMoney(s.pending, c)} hint="Total abierto hoy" href="/finanzas/cobros" />
         <StatCard label="Vencido" value={formatMoney(s.overdue, c)} tone={Number(s.overdue) > 0 ? "danger" : undefined} hint="Pendiente fuera de plazo" />
         <StatCard label="Gastos" value={formatMoney(s.expenses, c)} hint="Base + impuestos" href="/finanzas/gastos" />
+        <StatCard label="Pagos mensuales" value={`${formatMoney(recurringTotal, c)}/mes`} hint="Servicios recurrentes activos" href="/finanzas/mensuales" />
         <StatCard label="Beneficio estimado" value={formatMoney(s.profit, c)} tone={Number(s.profit) < 0 ? "danger" : "success"} hint="Cobrado − gastos" />
       </div>
 

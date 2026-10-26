@@ -68,6 +68,16 @@ export const paymentSchema = z.object({
   notes: optionalText(1000),
 });
 
+export const recurringSchema = z.object({
+  concept: requiredText(200, "El concepto"),
+  client_id: optionalUuid,
+  project_id: optionalUuid,
+  amount: requiredMoney,
+  status: z.enum(["activo", "pendiente", "pausado", "cancelado"]),
+  start_date: requiredDate,
+  notes: optionalText(1000),
+});
+
 export const expenseSchema = z.object({
   concept: requiredText(300, "El concepto"),
   category_id: optionalUuid,

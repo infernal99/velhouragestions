@@ -34,6 +34,8 @@ export default async function PrintQuotePage({ params }: PageProps<"/imprimir/pr
   if (!quote) notFound();
 
   const co = ctx.company;
+  // no tax column or total when the quote has no taxes
+  const hasTax = Number(quote.tax_total) > 0 || (lines ?? []).some((l) => Number(l.tax_pct) > 0);
   const c = co.currency;
   const companyLines = [co.legal_name ?? co.name, co.tax_id ? `NIF: ${co.tax_id}` : null, co.address, [co.postal_code, co.city].filter(Boolean).join(" "), co.email, co.phone, co.website].filter(Boolean);
   const cl = quote.client;
@@ -99,7 +101,7 @@ export default async function PrintQuotePage({ params }: PageProps<"/imprimir/pr
               <th className="w-16 py-2 text-right font-semibold">Cant.</th>
               <th className="w-24 py-2 text-right font-semibold">Precio</th>
               <th className="w-14 py-2 text-right font-semibold">Dto.</th>
-              <th className="w-14 py-2 text-right font-semibold">IVA</th>
+              {hasTax ? <th className="w-14 py-2 text-right font-semibold">IVA</th> : null}
               <th className="w-28 py-2 text-right font-semibold">Importe</th>
             </tr>
           </thead>
@@ -110,7 +112,7 @@ export default async function PrintQuotePage({ params }: PageProps<"/imprimir/pr
                 <td className="py-2.5 text-right tabular">{formatNumber(Number(l.quantity), 2)}</td>
                 <td className="py-2.5 text-right tabular">{formatMoney(l.unit_price, c)}</td>
                 <td className="py-2.5 text-right tabular">{Number(l.discount_pct) ? `${formatNumber(Number(l.discount_pct), 2)} %` : "—"}</td>
-                <td className="py-2.5 text-right tabular">{formatNumber(Number(l.tax_pct), 2)} %</td>
+                {hasTax ? <td className="py-2.5 text-right tabular">{formatNumber(Number(l.tax_pct), 2)} %</td> : null}
                 <td className="py-2.5 text-right tabular">{formatMoney(l.line_subtotal, c)}</td>
               </tr>
             ))}
@@ -129,14 +131,18 @@ export default async function PrintQuotePage({ params }: PageProps<"/imprimir/pr
                 <dd className="tabular">−{formatMoney(quote.discount_total, c)}</dd>
               </div>
             ) : null}
-            <div className="flex justify-between py-1">
-              <dt className="text-zinc-600">Base imponible</dt>
-              <dd className="tabular">{formatMoney(Number(quote.subtotal) - Number(quote.discount_total), c)}</dd>
-            </div>
-            <div className="flex justify-between py-1">
-              <dt className="text-zinc-600">Impuestos</dt>
-              <dd className="tabular">{formatMoney(quote.tax_total, c)}</dd>
-            </div>
+            {hasTax ? (
+              <>
+                <div className="flex justify-between py-1">
+                  <dt className="text-zinc-600">Base imponible</dt>
+                  <dd className="tabular">{formatMoney(Number(quote.subtotal) - Number(quote.discount_total), c)}</dd>
+                </div>
+                <div className="flex justify-between py-1">
+                  <dt className="text-zinc-600">Impuestos</dt>
+                  <dd className="tabular">{formatMoney(quote.tax_total, c)}</dd>
+                </div>
+              </>
+            ) : null}
             <div className="mt-1 flex justify-between border-t-2 pt-2 text-base font-semibold" style={{ borderColor: co.primary_color }}>
               <dt>Total</dt>
               <dd className="tabular">{formatMoney(quote.total, c)}</dd>

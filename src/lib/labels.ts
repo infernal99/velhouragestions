@@ -1,4 +1,5 @@
 import type {
+  RecurringStatus,
   CrmStage,
   EventCategory,
   FileCategory,
@@ -163,6 +164,14 @@ export const receivableStatusOptions: Option<ReceivableStatus>[] = [
 ];
 export const receivableStatusMap = toMap(receivableStatusOptions);
 
+export const recurringStatusOptions: Option<RecurringStatus>[] = [
+  { value: "activo", label: "Activo", tone: "success" },
+  { value: "pendiente", label: "Pendiente de contratar", tone: "warning" },
+  { value: "pausado", label: "Pausado", tone: "muted" },
+  { value: "cancelado", label: "Cancelado", tone: "danger" },
+];
+export const recurringStatusMap = toMap(recurringStatusOptions);
+
 export const paymentMethodOptions: Option<PaymentMethod>[] = [
   { value: "transferencia", label: "Transferencia" },
   { value: "tarjeta", label: "Tarjeta" },
@@ -209,4 +218,5 @@ export const entityTypeLabels: Record<string, string> = {
   receivable: "el cobro",
   payment: "un pago",
   expense: "el gasto",
+  recurring: "el pago mensual",
 };

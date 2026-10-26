@@ -555,3 +555,26 @@ describe("time tracking", () => {
     expect(Number(summary[0].minutes)).toBe(120);
   });
 });
+
+describe("monthly payments", () => {
+  it("only active agreements count and each month is generated once", async () => {
+    await asUser(db, admin, async (tx) => {
+      await tx.query("insert into public.recurring_payments (company_id, concept, amount, status, start_date, created_by) values ($1, 'Redes sociales', 30, 'activo', '2026-09-01', $2), ($1, 'Mantenimiento', 30, 'pendiente', '2026-09-01', $2), ($1, 'Cuota futura', 50, 'activo', '2027-01-01', $2)", [companyA, admin]);
+    });
+    const first = await asUser(db, admin, (tx) => one(rows<{ n: number }>(tx, "select public.generate_monthly_receivables($1, '2026-10-15') as n", [companyA])));
+    expect(first.n).toBe(1);
+    const again = await asUser(db, admin, (tx) => one(rows<{ n: number }>(tx, "select public.generate_monthly_receivables($1, '2026-10-01') as n", [companyA])));
+    expect(again.n).toBe(0);
+    const next = await asUser(db, admin, (tx) => one(rows<{ n: number }>(tx, "select public.generate_monthly_receivables($1, '2026-11-01') as n", [companyA])));
+    expect(next.n).toBe(1);
+    const created = await asUser(db, admin, (tx) => rows<{ concept: string; amount: string }>(tx, "select concept, amount from public.receivables where recurring_id is not null order by issue_date"));
+    expect(created.map((r) => r.concept)).toEqual(["Redes sociales · 10/2026", "Redes sociales · 11/2026"]);
+  });
+
+  it("members without finance access can neither see nor generate them", async () => {
+    const seen = await asUser(db, member, (tx) => rows(tx, "select 1 from public.recurring_payments"));
+    expect(seen).toHaveLength(0);
+    const gen = await asUser(db, member, (tx) => one(rows<{ n: number }>(tx, "select public.generate_monthly_receivables($1, '2026-12-01') as n", [companyA])));
+    expect(gen.n).toBe(0);
+  });
+});
