@@ -4,7 +4,7 @@ import { addDays } from "date-fns";
 import { AlertTriangle, Building2, CalendarDays, CheckSquare, FolderKanban, Receipt, TrendingUp, Wallet } from "lucide-react";
 import { requireContext } from "@/lib/auth/context";
 import { createClient } from "@/lib/supabase/server";
-import { listTasks } from "@/lib/queries/tasks";
+import { excludeArchivedProjectsFilter, listTasks } from "@/lib/queries/tasks";
 import { resolvePeriod } from "@/lib/periods";
 import { getQuotePipeline } from "@/lib/queries/finance";
 import { getOverview } from "@/lib/queries/overview";
@@ -36,6 +36,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
   const in14 = dayInAppTz(addDays(new Date(), 14));
   const in7 = addDays(new Date(), 7).toISOString();
   const finance = ctx.permissions.canViewFinances;
+  // tasks of deactivated (archived) projects don't count on the dashboard
+  const hideArchived = await excludeArchivedProjectsFilter(supabase, ctx.company.id);
+  const withoutArchived = <T extends { or: (f: string) => T }>(q: T) => (hideArchived ? q.or(hideArchived) : q);
 
   const [
     activeProjects,
@@ -68,14 +71,16 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
       .order("due_date")
       .limit(8)
       .returns<{ id: string; name: string; status: ProjectStatus; due_date: string; progress: number; client: { name: string } | null }[]>(),
-    supabase.from("tasks").select("id", { count: "exact", head: true }).eq("company_id", ctx.company.id).neq("status", "completada"),
-    supabase
-      .from("tasks")
-      .select("id", { count: "exact", head: true })
-      .eq("company_id", ctx.company.id)
-      .neq("status", "completada")
-      .lt("due_date", today),
-    listTasks(ctx.company.id, { assigneeId: ctx.userId, openOnly: true, limit: 200 }),
+    withoutArchived(supabase.from("tasks").select("id", { count: "exact", head: true }).eq("company_id", ctx.company.id).neq("status", "completada")),
+    withoutArchived(
+      supabase
+        .from("tasks")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", ctx.company.id)
+        .neq("status", "completada")
+        .lt("due_date", today),
+    ),
+    listTasks(ctx.company.id, { assigneeId: ctx.userId, openOnly: true, limit: 200, hideArchived: true }),
     supabase
       .from("events")
       .select("id, title, category, starts_at, all_day, location")

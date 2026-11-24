@@ -21,11 +21,19 @@ export function toTaskRows(rows: RawTask[] | null): TaskRow[] {
   }));
 }
 
+/** PostgREST `or` filter that leaves out tasks of archived (deactivated) projects. */
+export async function excludeArchivedProjectsFilter(supabase: Awaited<ReturnType<typeof createClient>>, companyId: string) {
+  const { data } = await supabase.from("projects").select("id").eq("company_id", companyId).not("archived_at", "is", null);
+  const ids = (data ?? []).map((p) => p.id as string);
+  return ids.length ? `project_id.is.null,project_id.not.in.(${ids.join(",")})` : null;
+}
+
 export async function listTasks(
   companyId: string,
-  opts: { projectId?: string; assigneeId?: string; openOnly?: boolean; limit?: number } = {},
+  opts: { projectId?: string; assigneeId?: string; openOnly?: boolean; limit?: number; hideArchived?: boolean } = {},
 ) {
   const supabase = await createClient();
+  const hide = opts.hideArchived ? await excludeArchivedProjectsFilter(supabase, companyId) : null;
   let q = supabase
     .from("tasks")
     .select(TASK_SELECT)
@@ -36,6 +44,7 @@ export async function listTasks(
   if (opts.projectId) q = q.eq("project_id", opts.projectId);
   if (opts.assigneeId) q = q.eq("assignee_id", opts.assigneeId);
   if (opts.openOnly) q = q.neq("status", "completada");
+  if (hide) q = q.or(hide);
   const { data } = await q.returns<RawTask[]>();
   return toTaskRows(data);
 }

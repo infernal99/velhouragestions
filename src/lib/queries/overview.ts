@@ -4,6 +4,7 @@ import type { createClient } from "@/lib/supabase/server";
 import { dayInAppTz, formatDate } from "@/lib/format";
 import { crmStageOptions, projectStatusMapWith, projectStatusOptions, taskStatusOptions } from "@/lib/labels";
 import { currentTimeMs } from "@/lib/queries/time";
+import { excludeArchivedProjectsFilter } from "@/lib/queries/tasks";
 import type { Slice } from "@/components/charts/simple-charts";
 import type { ProjectStatus } from "@/types/database";
 
@@ -46,8 +47,10 @@ export async function getOverview(
   const now = currentTimeMs();
   const since = addDays(new Date(now), -8).toISOString();
 
+  const hide = await excludeArchivedProjectsFilter(supabase, companyId);
+  const openTasksQuery = supabase.from("tasks").select("status").eq("company_id", companyId).is("parent_id", null).limit(5000);
   const [tasks, projects, clients, hours] = await Promise.all([
-    supabase.from("tasks").select("status").eq("company_id", companyId).is("parent_id", null).limit(5000),
+    hide ? openTasksQuery.or(hide) : openTasksQuery,
     supabase.from("projects").select("status").eq("company_id", companyId).is("archived_at", null).limit(5000),
     supabase.from("clients").select("stage, estimated_value").eq("company_id", companyId).is("archived_at", null).limit(5000),
     supabase.from("time_entries").select("started_at, ended_at").eq("company_id", companyId).gte("started_at", since).limit(5000),
