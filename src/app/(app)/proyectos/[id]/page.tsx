@@ -219,7 +219,7 @@ async function FilesTab({ projectId, clientId }: { projectId: string; clientId: 
   const supabase = await createClient();
   const { data } = await supabase
     .from("files")
-    .select("id, name, mime_type, size_bytes, category, uploaded_by, created_at")
+    .select("id, name, mime_type, size_bytes, category, uploaded_by, created_at, disabled_at")
     .eq("project_id", projectId)
     .order("created_at", { ascending: false })
     .returns<FileRow[]>();

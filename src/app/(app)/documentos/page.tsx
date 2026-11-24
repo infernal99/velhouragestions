@@ -13,7 +13,7 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/docume
   // RLS returns only the files this user may open (finance receipts only with finance access).
   const { data } = await supabase
     .from("files")
-    .select("id, name, mime_type, size_bytes, category, uploaded_by, created_at, project_id, client_id, project:projects(name), client:clients(name)")
+    .select("id, name, mime_type, size_bytes, category, uploaded_by, created_at, disabled_at, project_id, client_id, project:projects(name), client:clients(name)")
     .eq("company_id", ctx.company.id)
     .order("created_at", { ascending: false })
     .limit(2000)

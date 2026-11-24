@@ -43,7 +43,7 @@ export default async function ClientPage({ params }: PageProps<"/clientes/[id]">
     supabase.from("client_interactions").select("*").eq("client_id", id).order("occurred_at", { ascending: false }).returns<ClientInteraction[]>(),
     supabase.from("projects").select("id, name, status, progress, due_date").eq("client_id", id).is("archived_at", null).order("created_at", { ascending: false }).returns<Pick<Project, "id" | "name" | "status" | "progress" | "due_date">[]>(),
     supabase.from("comments").select("id, body, author_id, created_at").eq("client_id", id).order("created_at"),
-    supabase.from("files").select("id, name, mime_type, size_bytes, category, uploaded_by, created_at").eq("client_id", id).order("created_at", { ascending: false }).returns<FileRow[]>(),
+    supabase.from("files").select("id, name, mime_type, size_bytes, category, uploaded_by, created_at, disabled_at").eq("client_id", id).order("created_at", { ascending: false }).returns<FileRow[]>(),
     finance
       ? supabase.from("quotes").select("id, number, title, status, total, issue_date").eq("client_id", id).order("issue_date", { ascending: false }).returns<Pick<Quote, "id" | "number" | "title" | "status" | "total" | "issue_date">[]>()
       : Promise.resolve({ data: [] as Pick<Quote, "id" | "number" | "title" | "status" | "total" | "issue_date">[] }),

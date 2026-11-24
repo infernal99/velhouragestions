@@ -62,6 +62,26 @@ export async function getFileUrl(id: string, download = false): Promise<ActionRe
   });
 }
 
+/** Deactivate (or reactivate) a document: it stays stored, just flagged as inactive. */
+export async function setFileDisabled(id: string, disabled: boolean): Promise<ActionResult> {
+  return run(async () => {
+    if (!z.uuid().safeParse(id).success) return fail("Archivo no válido.");
+    const ctx = await actionContext();
+    const { data, error } = await ctx.supabase
+      .from("files")
+      .update({ disabled_at: disabled ? new Date().toISOString() : null })
+      .eq("id", id)
+      .select("project_id, client_id")
+      .maybeSingle();
+    if (error) return fromDbError(error);
+    if (!data) return fail("Solo quien subió el archivo o un administrador puede cambiarlo.");
+    revalidatePath("/documentos");
+    if (data.project_id) revalidatePath(`/proyectos/${data.project_id}`);
+    if (data.client_id) revalidatePath(`/clientes/${data.client_id}`);
+    return ok(undefined, disabled ? "Documento desactivado" : "Documento activado");
+  });
+}
+
 export async function deleteFile(id: string): Promise<ActionResult> {
   return run(async () => {
     const ctx = await actionContext();
