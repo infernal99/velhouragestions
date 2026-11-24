@@ -32,6 +32,16 @@ export function ProjectActions({ project }: { project: ProjectFormValues & { id:
       <Button variant="outline" onClick={() => setEditing(true)}>
         <Pencil /> Editar
       </Button>
+      <Button
+        variant="outline"
+        onClick={async () => {
+          const res = await runAction(setProjectArchived(project.id, !project.archived_at));
+          if (res.ok) router.refresh();
+        }}
+      >
+        {project.archived_at ? <ArchiveRestore /> : <Archive />}
+        {project.archived_at ? "Reactivar" : "Desactivar"}
+      </Button>
       <ConfirmDialog
         title="¿Eliminar el proyecto definitivamente?"
         description="Se eliminarán sus tareas, comentarios, archivos y ficha web. Los cobros y gastos se conservarán sin proyecto. Si solo quieres ocultarlo, archívalo."

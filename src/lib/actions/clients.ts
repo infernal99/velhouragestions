@@ -60,9 +60,20 @@ export async function setClientArchived(id: string, archived: boolean): Promise<
       .eq("id", id)
       .eq("company_id", ctx.company.id);
     if (error) return fromDbError(error);
-    revalidatePath("/clientes");
-    revalidatePath(`/clientes/${id}`);
-    return ok(undefined, archived ? "Cliente archivado" : "Cliente restaurado");
+    // Deactivating a client (e.g. a lost deal) also archives its projects and
+    // cancels its recurring payments; restoring brings the projects back.
+    const stamp = archived ? new Date().toISOString() : null;
+    await ctx.supabase.from("projects").update({ archived_at: stamp }).eq("client_id", id).eq("company_id", ctx.company.id);
+    if (archived) {
+      await ctx.supabase
+        .from("recurring_payments")
+        .update({ status: "cancelado" })
+        .eq("client_id", id)
+        .eq("company_id", ctx.company.id)
+        .in("status", ["activo", "pendiente"]);
+    }
+    for (const p of ["/clientes", `/clientes/${id}`, "/proyectos", "/finanzas/mensuales", "/finanzas", "/"]) revalidatePath(p);
+    return ok(undefined, archived ? "Cliente desactivado" : "Cliente reactivado");
   });
 }
 

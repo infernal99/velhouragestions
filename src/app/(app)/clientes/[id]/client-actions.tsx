@@ -31,6 +31,25 @@ export function ClientActions({ client }: { client: Client }) {
         <Pencil /> Editar
       </Button>
       <ConfirmDialog
+        title={client.archived_at ? "¿Reactivar este cliente?" : "¿Desactivar este cliente?"}
+        description={
+          client.archived_at
+            ? "Se restaurarán el cliente y sus proyectos. Los pagos mensuales cancelados hay que reactivarlos a mano."
+            : "Se archivarán el cliente y sus proyectos, y se cancelarán sus pagos mensuales. Su pendiente deja de contar en el inicio. No se borra nada."
+        }
+        confirmLabel={client.archived_at ? "Reactivar" : "Desactivar"}
+        onConfirm={async () => {
+          const res = await runAction(setClientArchived(client.id, !client.archived_at));
+          if (res.ok) router.refresh();
+        }}
+        trigger={(open) => (
+          <Button variant="outline" onClick={open}>
+            {client.archived_at ? <ArchiveRestore /> : <Archive />}
+            {client.archived_at ? "Reactivar" : "Desactivar"}
+          </Button>
+        )}
+      />
+      <ConfirmDialog
         title="¿Eliminar este cliente?"
         description="Se eliminarán su historial y comentarios. Los proyectos, presupuestos y cobros se conservarán sin cliente asociado."
         onConfirm={async () => {
